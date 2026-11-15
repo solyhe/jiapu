@@ -2,7 +2,7 @@
 
 一个轻量、零依赖的在线家谱平台。竖排姓名卡片、可视化家族树、在线编辑，支持 **Docker（Alpine + SQLite3）** 和 **Cloudflare Workers + KV** 两种部署方式。
 
-![预览](docs/preview.png)
+![预览](jiapu-preview.png)
 
 - 🪶 **轻量**：后端只用 Python 标准库，前端是单个 HTML 文件，无任何第三方依赖；Docker 镜像约 50MB，运行内存约 20MB
 - ☁️ **免服务器**：也可以一个 `worker.js` 部署到 Cloudflare Workers，免费额度足够个人或家族使用
