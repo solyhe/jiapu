@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>家谱树</title>
+<link rel="icon" href="/favicon.svg">
+<style>
+:root{--bg:#f7f3ea;--line:#b9b2a2;--ink:#3a3328;--muted:#8d8573;--gold:#b8893a;--panel:#fffdf8;--bd:#e6dfcf;
+--m-bg:#dce9f8;--m-bd:#8aaedb;--m-tx:#22467a;--f-bg:#f8dfe9;--f-bd:#dc97b3;--f-tx:#8a2650;--u-bg:#eceae4;--u-bd:#b9b4a8;--u-tx:#555;
+--d-bg:#e9e9e9;--d-bd:#bdbdbd;--d-tx:#8a8a8a}
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:14px/1.5 -apple-system,"PingFang SC","Microsoft YaHei","Noto Sans CJK SC",sans-serif;overflow:hidden}
+button,input,select,textarea{font:inherit;color:inherit}
+#bar{position:fixed;top:0;left:0;right:0;height:52px;display:flex;align-items:center;gap:6px;padding:0 10px;background:rgba(255,253,248,.96);border-bottom:1px solid var(--bd);z-index:10;overflow-x:auto;white-space:nowrap;scrollbar-width:none}
+#bar::-webkit-scrollbar{display:none}
+.logo{font-weight:700;color:var(--gold);font-size:17px;margin-right:2px;font-family:"STKaiti","KaiTi",serif}
+.btn{border:1px solid var(--bd);background:#fff;border-radius:6px;padding:4px 10px;cursor:pointer;flex:none}
+.btn:hover{border-color:var(--gold)}.btn.on{background:#f4e6c8;border-color:var(--gold)}
+.btn.danger{color:#c0392b}.btn.pri{background:var(--gold);border-color:var(--gold);color:#fff}
+.sep{width:1px;height:22px;background:var(--bd);flex:none;margin:0 2px}
+#treeSel{border:1px solid var(--bd);border-radius:6px;padding:3px 6px;background:#fff;max-width:150px;flex:none}
+.search{position:relative;flex:none}.search input{width:130px;border:1px solid var(--bd);border-radius:6px;padding:4px 26px 4px 8px;background:#fff}
+.search span{position:absolute;right:7px;top:4px;color:var(--muted)}
+#status{color:var(--muted);font-size:12px;flex:none;margin:0 4px}#status i{display:inline-block;width:7px;height:7px;border-radius:50%;background:#4caf50;margin-right:4px}
+#status.err i{background:#e53935}#status.busy i{background:#f0a020}
+#stage{position:fixed;top:52px;left:0;right:0;bottom:0;touch-action:none;cursor:grab}
+#stage.drag{cursor:grabbing}
+svg text{user-select:none}
+.card{cursor:pointer}.card:hover rect.c{filter:brightness(.97)}
+.plus{cursor:pointer}.plus:hover circle{fill:#e3f1e3}
+#panel{position:fixed;top:64px;right:12px;width:310px;max-height:calc(100% - 76px);overflow:auto;background:var(--panel);border:1px solid var(--bd);border-radius:12px;box-shadow:0 6px 24px rgba(80,60,20,.12);padding:14px 16px;z-index:9;display:none}
+#panel.show{display:block}
+#panel h3{margin:0 0 10px;font-size:15px;color:var(--gold);display:flex;justify-content:space-between;align-items:center;border-bottom:1px dashed var(--bd);padding-bottom:8px}
+#panel h3 b{cursor:pointer;color:var(--muted);font-weight:400;font-size:18px}
+#panel label{display:block;font-size:12px;color:var(--muted);margin:8px 0 3px}
+#panel input,#panel textarea{width:100%;border:1px solid var(--bd);border-radius:6px;padding:6px 8px;background:#fffefb}
+#panel textarea{min-height:64px;resize:vertical}
+.seg{display:flex;gap:6px}.seg button{flex:1;border:1px solid var(--bd);background:#fff;border-radius:6px;padding:5px 0;cursor:pointer}
+.seg button.on.m{background:var(--m-bg);border-color:var(--m-bd)}.seg button.on.f{background:var(--f-bg);border-color:var(--f-bd)}
+.seg button.on.u,.seg button.on.a{background:#f4e6c8;border-color:var(--gold)}.seg button.on.d{background:#e6e6e6;border-color:#aaa}
+.row2{display:flex;gap:8px}.row2>div{flex:1}
+.acts{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:12px}.acts button{border:1px solid var(--bd);background:#fff;border-radius:6px;padding:6px 0;cursor:pointer;color:#476}
+.acts button:hover{border-color:#7a9}
+.batch{display:flex;gap:6px;margin-top:6px}.batch input{flex:1}.batch button{border:1px solid var(--bd);background:#f4e6c8;border-radius:6px;padding:0 10px;cursor:pointer;flex:none}
+.del{width:100%;margin-top:6px;border:1px solid #f0c9c4;background:#fff;color:#c0392b;border-radius:6px;padding:6px;cursor:pointer}
+.info{margin-top:12px;padding-top:10px;border-top:1px dashed var(--bd);font-size:12px;color:var(--muted);line-height:1.9}.info b{color:var(--gold);font-weight:600}
+.info code{background:#f1ece0;padding:0 4px;border-radius:3px}
+#legend{position:fixed;right:12px;bottom:12px;background:rgba(255,253,248,.95);border:1px solid var(--bd);border-radius:10px;padding:8px 12px;font-size:12px;color:var(--muted);z-index:8}
+#legend div{display:flex;align-items:center;gap:6px}#legend span{display:inline-block;width:12px;height:12px;border-radius:3px;border:1px solid}
+#zoomInfo{position:fixed;left:12px;bottom:12px;font-size:12px;color:var(--muted);z-index:8}
+#empty{position:fixed;top:45%;left:50%;transform:translate(-50%,-50%);text-align:center;color:var(--muted);display:none}
+#empty button{margin:6px}
+.mask{position:fixed;inset:0;background:rgba(40,30,10,.3);z-index:20;display:flex;align-items:center;justify-content:center}
+.dlg{background:var(--panel);border-radius:12px;width:min(520px,92vw);max-height:84vh;overflow:auto;padding:18px 20px;box-shadow:0 10px 40px rgba(0,0,0,.2)}
+.dlg h4{margin:0 0 12px;color:var(--gold);font-size:16px;display:flex;justify-content:space-between}.dlg h4 b{cursor:pointer;color:var(--muted);font-weight:400}
+.dlg table{width:100%;border-collapse:collapse;font-size:13px}.dlg td,.dlg th{padding:6px 4px;border-bottom:1px solid var(--bd);text-align:left}
+.kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}.kpi div{background:#fff;border:1px solid var(--bd);border-radius:8px;padding:8px;text-align:center}
+.kpi b{display:block;font-size:20px;color:var(--gold)}.kpi small{color:var(--muted)}
+.bar{height:8px;background:#e8dcc0;border-radius:4px}
+#toast{position:fixed;top:64px;left:50%;transform:translateX(-50%);background:#3a3328;color:#fff;padding:6px 14px;border-radius:6px;font-size:13px;z-index:30;display:none}
+.ro .edit-only{display:none!important}
+@media (max-width:640px){#panel{left:0;right:0;top:auto;bottom:0;width:auto;max-height:62%;border-radius:14px 14px 0 0}#legend{display:none}}
+@media print{#bar,#panel,#legend,#zoomInfo{display:none}}
+</style>
+</head>
+<body>
+<div id="bar">
+  <span class="logo">家谱树</span>
+  <select id="treeSel" title="切换家谱"></select>
+  <button class="btn" data-a="trees" title="新建 / 重命名 / 删除家谱">管理</button>
+  <span class="sep"></span>
+  <button class="btn" data-a="fit">适应窗口</button>
+  <button class="btn" data-a="zin">＋</button>
+  <button class="btn" data-a="zout">－</button>
+  <button class="btn edit-only" data-a="undo" title="Ctrl+Z">↶ 撤销</button>
+  <div class="search"><input id="q" placeholder="搜姓名…" autocomplete="off"><span>⌕</span></div>
+  <button class="btn" data-a="stats">统计</button>
+  <button class="btn edit-only" data-a="sample">示例</button>
+  <button class="btn" data-a="layout" id="layoutBtn" title="切换竖排 / 横排">排版：竖</button>
+  <span id="status"><i></i>就绪</span>
+  <button class="btn edit-only" data-a="saveFile">存到文件</button>
+  <button class="btn edit-only" data-a="openFile">打开</button>
+  <button class="btn" data-a="png">导出图片</button>
+  <button class="btn" data-a="print">打印</button>
+  <button class="btn" data-a="csvOut">导出表格</button>
+  <button class="btn edit-only" data-a="csvIn">导入表格</button>
+  <button class="btn edit-only" data-a="backup">备份</button>
+  <button class="btn edit-only" data-a="restore">恢复</button>
+  <button class="btn danger edit-only" data-a="clear">清空</button>
+  <button class="btn pri" data-a="login" id="loginBtn" style="display:none">登录编辑</button>
+</div>
+<div id="stage"><svg id="svg" width="100%" height="100%"><g id="vp"></g></svg></div>
+<div id="empty"><p>这个家谱还是空的</p><button class="btn pri edit-only" data-a="first">添加始祖</button><button class="btn edit-only" data-a="sample">载入示例</button></div>
+<div id="panel"></div>
+<div id="legend">
+  <div><span style="background:var(--m-bg);border-color:var(--m-bd)"></span>男 · 在世</div>
+  <div><span style="background:var(--f-bg);border-color:var(--f-bd)"></span>女 · 在世</div>
+  <div><span style="background:var(--d-bg);border-color:var(--d-bd)"></span>已故</div>
+  <div><span style="background:#fff;border:1px dashed #999"></span>配偶（虚线框）</div>
+</div>
+<div id="zoomInfo"></div>
+<div id="toast"></div>
+<input type="file" id="fileIn" accept=".json,application/json" hidden>
+<input type="file" id="csvFile" accept=".csv,text/csv" hidden>
+<script>
+"use strict";
+const $=s=>document.querySelector(s), esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const NS="http://www.w3.org/2000/svg";
+let S={trees:[],tid:null,name:"",version:null,members:[],sel:null,canEdit:true,auth:false,
+  vertical:localStorage.getItem("jp_layout")!=="h",view:{x:40,y:40,k:1},hits:[],hitIdx:0,undo:[],pos:{},bounds:null};
+let saveTimer=null,saving=false,pendingSave=false;
+
+/* ---------------- API ---------------- */
+async function api(method,url,body){
+  const r=await fetch(url,{method,headers:body?{"Content-Type":"application/json"}:{},body:body?JSON.stringify(body):undefined,credentials:"same-origin"});
+  let d=null;try{d=await r.json()}catch(e){}
+  if(!r.ok)throw Object.assign(new Error((d&&d.error)||("HTTP "+r.status)),{status:r.status});
+  return d;
+}
+function toast(t,ms=1800){const e=$("#toast");e.textContent=t;e.style.display="block";clearTimeout(e._t);e._t=setTimeout(()=>e.style.display="none",ms)}
+function setStatus(t,cls=""){const e=$("#status");e.className=cls;e.innerHTML="<i></i>"+esc(t)}
+const hms=()=>new Date().toTimeString().slice(0,8);
+
+async function boot(){
+  try{const me=await api("GET","/api/me");S.canEdit=me.canEdit;S.auth=me.auth}catch(e){}
+  document.body.classList.toggle("ro",!S.canEdit);
+  $("#loginBtn").style.display=S.canEdit?"none":"";
+  $("#layoutBtn").textContent="排版："+(S.vertical?"竖":"横");
+  await loadTrees(+localStorage.getItem("jp_tid")||null);
+}
+async function loadTrees(want){
+  S.trees=await api("GET","/api/trees");
+  const sel=$("#treeSel");sel.innerHTML=S.trees.map(t=>`<option value="${t.id}">${esc(t.name)}（${t.count}人）</option>`).join("");
+  const id=S.trees.find(t=>t.id===want)?want:S.trees[0].id;sel.value=id;await openTree(id);
+}
+async function openTree(id){
+  const d=await api("GET","/api/trees/"+id);
+  S.tid=id;S.name=d.name;S.version=d.version;S.members=d.members;S.sel=null;S.undo=[];
+  localStorage.setItem("jp_tid",id);document.title=d.name+" · 家谱树";
+  setStatus("已加载 · "+(d.updated_at||"").slice(11));
+  render();fit();closePanel();
+}
+function scheduleSave(){if(!S.canEdit)return;setStatus("待保存…","busy");clearTimeout(saveTimer);saveTimer=setTimeout(save,500)}
+async function save(backupNote){
+  if(saving){pendingSave=true;return}
+  saving=true;setStatus("保存中…","busy");
+  try{
+    const r=await api("PUT","/api/trees/"+S.tid,{version:S.version,members:S.members,backup:backupNote||undefined});
+    S.version=r.version;setStatus("已保存 · "+hms());
+    const t=S.trees.find(t=>t.id===S.tid);if(t&&t.count!==r.count){t.count=r.count;const o=$("#treeSel").selectedOptions[0];if(o)o.textContent=`${t.name}（${r.count}人）`}
+  }catch(e){setStatus("保存失败","err");toast(e.message,4000);if(e.status===409&&confirm(e.message+"\n现在重新加载？"))openTree(S.tid)}
+  saving=false;if(pendingSave){pendingSave=false;save()}
+}
+
+/* ---------------- 数据模型 ---------------- */
+const uid=()=>Date.now().toString(36).slice(-4)+Math.random().toString(36).slice(2,6);
+const byId=()=>{const m={};for(const x of S.members)m[x.id]=x;return m};
+function newMember(o){return Object.assign({id:uid(),name:"",gender:"u",alive:1,birth:"",death:"",zibei:"",origin:"",job:"",bio:"",parent_id:"",spouse_of:"",ord:0},o)}
+function snapshot(){S.undo.push(JSON.stringify(S.members));if(S.undo.length>80)S.undo.shift()}
+function mutate(fn){if(!S.canEdit)return;snapshot();fn();render();scheduleSave()}
+function kids(id,idx){return (idx||index()).kids[id]||[]}
+function index(){
+  const k={},sp={},ids=new Set(S.members.map(m=>m.id));
+  for(const m of S.members){
+    if(m.spouse_of&&ids.has(m.spouse_of))(sp[m.spouse_of]=sp[m.spouse_of]||[]).push(m);
+    else if(m.parent_id&&ids.has(m.parent_id))(k[m.parent_id]=k[m.parent_id]||[]).push(m);
+  }
+  const srt=(a,b)=>(a.ord-b.ord)||(parseInt(a.birth)||9999)-(parseInt(b.birth)||9999);
+  for(const x in k)k[x].sort(srt);for(const x in sp)sp[x].sort(srt);
+  const roots=S.members.filter(m=>!(m.spouse_of&&ids.has(m.spouse_of))&&!(m.parent_id&&ids.has(m.parent_id))).sort(srt);
+  const gen={},by={};for(const m of S.members)by[m.id]=m;
+  const walk=(m,g,seen)=>{if(seen.has(m.id))return;seen.add(m.id);gen[m.id]=g;(sp[m.id]||[]).forEach(s=>gen[s.id]=g);(k[m.id]||[]).forEach(c=>walk(c,g+1,seen))};
+  const seen=new Set();roots.forEach(r=>walk(r,1,seen));
+  return {kids:k,sp,roots,gen,by};
+}
+const CN=["长","次","三","四","五","六","七","八","九","十"];
+function rankLabel(m,idx){
+  const p=m.parent_id&&idx.by[m.parent_id];if(!p||m.spouse_of)return "";
+  const sib=(idx.kids[p.id]||[]).filter(x=>x.gender===m.gender);const i=sib.indexOf(m);
+  if(m.gender==="u")return "排行"+((idx.kids[p.id]||[]).indexOf(m)+1);
+  return (CN[i]||(i+1))+(m.gender==="m"?"子":"女");
+}
+
+/* ---------------- 布局 & 渲染 ---------------- */
+function dims(){return S.vertical?{W:68,H:124,G:8,HG:22,V:176}:{W:112,H:52,G:6,HG:18,V:104}}
+function layout(idx){
+  const {W,H,G,HG,V}=dims(),pos={},sw={},uw=id=>W*(1+(idx.sp[id]||[]).length)+G*(idx.sp[id]||[]).length;
+  const measure=(m,seen)=>{if(seen.has(m.id))return 0;seen.add(m.id);const ks=idx.kids[m.id]||[];let t=0;ks.forEach((c,i)=>t+=measure(c,seen)+(i?HG:0));return sw[m.id]=Math.max(uw(m.id),t)};
+  const place=(m,x0,y,seen)=>{if(seen.has(m.id))return;seen.add(m.id);
+    const w=sw[m.id],u=uw(m.id),ux=x0+(w-u)/2;pos[m.id]={x:ux,y,main:true,u};
+    (idx.sp[m.id]||[]).forEach((s,i)=>pos[s.id]={x:ux+(W+G)*(i+1),y,main:false});
+    const ks=idx.kids[m.id]||[];let tot=0;ks.forEach((c,i)=>tot+=sw[c.id]+(i?HG:0));let cx=x0+(w-tot)/2;
+    ks.forEach(c=>{place(c,cx,y+V,seen);cx+=sw[c.id]+HG})};
+  let x=0;const s1=new Set(),s2=new Set();
+  idx.roots.forEach(r=>{measure(r,s1);place(r,x,0,s2);x+=sw[r.id]+HG*3});
+  return pos;
+}
+const COL={m:["#dce9f8","#8aaedb","#22467a"],f:["#f8dfe9","#dc97b3","#8a2650"],u:["#eceae4","#b9b4a8","#555555"],d:["#e9e9e9","#bdbdbd","#8a8a8a"]};
+function cardColors(m){return +m.alive?COL[m.gender]||COL.u:COL.d}
+/* 生成 SVG 字符串；forExport=true 时不含按钮、并内联颜色 */
+function buildSVG(idx,pos,forExport){
+  const {W,H,V,G}=dims(),out=[],lines=[],hit=new Set(S.hits);
+  for(const m of S.members){
+    const p=pos[m.id];if(!p||!p.main)continue;const ks=(idx.kids[m.id]||[]).filter(c=>pos[c.id]);
+    const sp=idx.sp[m.id]||[];const cx=sp.length?p.x+W+G/2:p.x+W/2;  // 夫妻连线中点
+    if(sp.length)lines.push(`M${p.x+W} ${p.y+H/2}h${G}`);
+    if(ks.length){const by=p.y+H+(V-H)/2+6,y0=p.y+(sp.length?H/2:H);
+      lines.push(`M${cx} ${y0}V${by}`);
+      const xs=ks.map(c=>pos[c.id].x+W/2);lines.push(`M${Math.min(cx,...xs)} ${by}H${Math.max(cx,...xs)}`);
+      xs.forEach(x=>lines.push(`M${x} ${by}V${by+(V-H)/2-6}`));}
+  }
+  out.push(`<path d="${lines.join("")}" fill="none" stroke="#b9b2a2" stroke-width="1.3"/>`);
+  for(const m of S.members){
+    const p=pos[m.id];if(!p)continue;const [bg,bd,tx]=cardColors(m),sel=!forExport&&S.sel===m.id;
+    const nm=m.name||"未命名",ch=[...nm];
+    let g=`<g class="card" data-id="${m.id}" transform="translate(${p.x},${p.y})">`;
+    if(hit.has(m.id)&&!forExport)g+=`<rect x="-5" y="-5" width="${W+10}" height="${H+10}" rx="9" fill="#ffe27a" opacity=".7"/>`;
+    g+=`<rect class="c" width="${W}" height="${H}" rx="7" fill="${bg}" stroke="${sel?"#b8893a":bd}" stroke-width="${sel?2.6:1.3}" ${p.main?"":'stroke-dasharray="5 3"'}/>`;
+    if(S.vertical){
+      const fs=ch.length<=3?26:ch.length===4?22:Math.max(12,Math.floor(96/ch.length));const step=fs*1.12,y0=H/2-(ch.length-1)*step/2;
+      ch.forEach((c,i)=>g+=`<text x="${W/2}" y="${y0+i*step}" font-size="${fs}" font-weight="700" fill="${tx}" text-anchor="middle" dominant-baseline="central" font-family="STKaiti,KaiTi,'Noto Serif CJK SC',serif">${esc(c)}</text>`);
+    }else{
+      const fs=ch.length<=4?18:Math.max(11,Math.floor(80/ch.length));
+      g+=`<text x="${W/2}" y="${H/2-(m.birth||m.death?7:0)}" font-size="${fs}" font-weight="700" fill="${tx}" text-anchor="middle" dominant-baseline="central" font-family="STKaiti,KaiTi,'Noto Serif CJK SC',serif">${esc(nm)}</text>`;
+      if(m.birth||m.death)g+=`<text x="${W/2}" y="${H-10}" font-size="10" fill="${tx}" opacity=".75" text-anchor="middle">${esc(m.birth||"?")}${+m.alive?"":"–"+esc(m.death||"?")}</text>`;
+    }
+    if(p.main){const n=m.parent_id&&idx.kids[m.parent_id]?idx.kids[m.parent_id].indexOf(m)+1:0;
+      if(n)g+=`<circle cx="${W-6}" cy="6" r="6.5" fill="#c9a24e"/><text x="${W-6}" y="6.5" font-size="9" fill="#fff" text-anchor="middle" dominant-baseline="central">${n}</text>`;}
+    else{const t=m.gender==="f"?"妻":m.gender==="m"?"夫":"配";
+      g+=`<rect x="${W/2-11}" y="-6" width="22" height="12" rx="6" fill="#c9a24e"/><text x="${W/2}" y="0.5" font-size="9" fill="#fff" text-anchor="middle" dominant-baseline="central">${t}</text>`;}
+    g+="</g>";out.push(g);
+    if(p.main&&!forExport&&S.canEdit){const cx=(idx.sp[m.id]||[]).length?p.x+W+G/2:p.x+W/2;
+      out.push(`<g class="plus" data-add="${m.id}" transform="translate(${cx},${p.y+H+13})"><circle r="7.5" fill="#fff" stroke="#6aa86a" stroke-width="1.2"/><path d="M-4 0H4M0 -4V4" stroke="#4d8f4d" stroke-width="1.4"/><title>添加子女</title></g>`);}
+  }
+  return out.join("");
+}
+function render(){
+  const idx=index(),pos=layout(idx);S.pos=pos;S.idx=idx;
+  const {W,H}=dims();let x1=1e9,y1=1e9,x2=-1e9,y2=-1e9;
+  for(const id in pos){const p=pos[id];x1=Math.min(x1,p.x);y1=Math.min(y1,p.y);x2=Math.max(x2,p.x+W);y2=Math.max(y2,p.y+H+24)}
+  S.bounds=S.members.length?{x:x1,y:y1,w:x2-x1,h:y2-y1}:null;
+  $("#vp").innerHTML=buildSVG(idx,pos,false);applyView();
+  $("#empty").style.display=S.members.length?"none":"block";
+  if(S.sel&&!idx.by[S.sel])closePanel();else if(S.sel)renderPanel();
+}
+function applyView(){const v=S.view;$("#vp").setAttribute("transform",`translate(${v.x},${v.y}) scale(${v.k})`);$("#zoomInfo").textContent=Math.round(v.k*100)+"%"}
+function fit(){
+  const b=S.bounds,st=$("#stage").getBoundingClientRect();if(!b){S.view={x:40,y:40,k:1};return applyView()}
+  const pr=$("#panel").classList.contains("show")&&innerWidth>640?330:0,aw=st.width-pr-40,ah=st.height-40;
+  const k=Math.min(1.4,Math.max(.1,Math.min(aw/b.w,ah/b.h)));
+  S.view={k,x:20+(aw-b.w*k)/2-b.x*k,y:20+Math.max(0,(ah-b.h*k)/2)-b.y*k};applyView();
+}
+function zoomAt(f,cx,cy){const v=S.view,k=Math.min(4,Math.max(.08,v.k*f));v.x=cx-(cx-v.x)*k/v.k;v.y=cy-(cy-v.y)*k/v.k;v.k=k;applyView()}
+function centerOn(id){const p=S.pos[id];if(!p)return;const {W,H}=dims(),st=$("#stage").getBoundingClientRect(),v=S.view;
+  if(v.k<.6)v.k=.9;const sh=$("#panel").classList.contains("show"),mob=innerWidth<=640;
+  v.x=st.width/2-(p.x+W/2)*v.k-(!mob&&sh?160:0);v.y=(mob&&sh?st.height*.22:st.height/2)-(p.y+H/2)*v.k;applyView()}
+
+/* ---------------- 平移 / 缩放 / 点击 ---------------- */
+(()=>{const st=$("#stage"),pts=new Map();let start=null,moved=false,pinch=null;
+  st.addEventListener("pointerdown",e=>{st.setPointerCapture(e.pointerId);pts.set(e.pointerId,{x:e.clientX,y:e.clientY});moved=false;
+    if(pts.size===1)start={x:e.clientX,y:e.clientY,vx:S.view.x,vy:S.view.y,t:e.target};
+    if(pts.size===2){const [a,b]=[...pts.values()];pinch={d:Math.hypot(a.x-b.x,a.y-b.y),k:S.view.k}}});
+  st.addEventListener("pointermove",e=>{if(!pts.has(e.pointerId))return;pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(pts.size===2&&pinch){const [a,b]=[...pts.values()],d=Math.hypot(a.x-b.x,a.y-b.y),r=st.getBoundingClientRect();
+      zoomAt(pinch.k*d/pinch.d/S.view.k,(a.x+b.x)/2-r.left,(a.y+b.y)/2-r.top);moved=true;return}
+    if(start){const dx=e.clientX-start.x,dy=e.clientY-start.y;if(Math.abs(dx)+Math.abs(dy)>4){moved=true;st.classList.add("drag")}
+      if(moved){S.view.x=start.vx+dx;S.view.y=start.vy+dy;applyView()}}});
+  const up=e=>{pts.delete(e.pointerId);st.classList.remove("drag");if(pts.size<2)pinch=null;
+    if(pts.size===0&&start&&!moved){const t=start.t.closest&&start.t.closest("[data-id],[data-add]");
+      if(t&&t.dataset.add)addChild(t.dataset.add);else if(t)select(t.dataset.id);else closePanel()}
+    if(pts.size===0)start=null};
+  st.addEventListener("pointerup",up);st.addEventListener("pointercancel",up);
+  st.addEventListener("wheel",e=>{e.preventDefault();const r=st.getBoundingClientRect();zoomAt(Math.exp(-e.deltaY*.0015),e.clientX-r.left,e.clientY-r.top)},{passive:false});
+})();
+
+/* ---------------- 编辑面板 ---------------- */
+function select(id){S.sel=id;$("#panel").classList.add("show");render();if(innerWidth<=640)centerOn(id)}
+function closePanel(){const had=S.sel;S.sel=null;const P=$("#panel");P.classList.remove("show");P.innerHTML="";P.dataset.for="";if(had)render()}
+function renderPanel(){
+  const idx=S.idx,m=idx.by[S.sel];if(!m)return closePanel();
+  const P=$("#panel");if(P.dataset.for===m.id&&P.contains(document.activeElement)&&document.activeElement.tagName!=="BUTTON")return updateInfo(m,idx);
+  P.dataset.for=m.id;const ro=S.canEdit?"":"disabled";
+  const seg=(k,opts)=>`<div class="seg">${opts.map(([v,t,c])=>`<button ${ro} data-k="${k}" data-v="${v}" class="${c} ${String(m[k])===String(v)?"on":""}">${t}</button>`).join("")}</div>`;
+  const inp=(k,ph)=>`<input ${ro} data-f="${k}" value="${esc(m[k])}" placeholder="${ph}">`;
+  P.innerHTML=`<h3>${S.canEdit?"编辑成员":"成员信息"}<b data-x="close">×</b></h3>
+  <label>姓名</label>${inp("name","姓名")}
+  <label>性别</label>${seg("gender",[["m","男","m"],["f","女","f"],["u","未填","u"]])}
+  <label>在世状态</label>${seg("alive",[[1,"在世","a"],[0,"已故","d"]])}
+  <div class="row2"><div><label>出生年</label>${inp("birth","如 1946")}</div><div><label>逝世年</label>${inp("death","如 2020")}</div></div>
+  <div class="row2"><div><label>字辈 / 辈分</label>${inp("zibei","如 文字辈")}</div><div><label>籍贯</label>${inp("origin","如 山东泰安")}</div></div>
+  <label>职业 / 身份</label>${inp("job","如 工程师、教师")}
+  <label>生平简介</label><textarea ${ro} data-f="bio" placeholder="可写事迹、迁徙、成就等，导出图片时不会显示">${esc(m.bio)}</textarea>
+  <div class="edit-only">
+  <div class="acts"><button data-x="child">＋ 添加子女</button><button data-x="sib">＋ 添加同胞</button>
+  <button data-x="spouse">＋ 添加配偶</button><button data-x="parent">＋ 添加父母</button>
+  <button data-x="left">← 前移</button><button data-x="right">后移 →</button></div>
+  <div class="batch"><input id="batch" placeholder="批量：大明,小红,小刚"><button data-x="batch">批量加子女</button></div>
+  <button class="del" data-x="del">🗑 删除此人</button></div>
+  <div class="info" id="info"></div>`;
+  updateInfo(m,idx);
+}
+function updateInfo(m,idx){
+  const ks=idx.kids[m.spouse_of||m.id]||[],sp=m.spouse_of?[idx.by[m.spouse_of]]:(idx.sp[m.id]||[]);
+  const life=(m.birth||"?")+" — "+(+m.alive?"在世":(m.death||"已故"));
+  $("#info").innerHTML=`第 <b>${idx.gen[m.id]||1}</b> 代${rankLabel(m,idx)?" · <b>"+rankLabel(m,idx)+"</b>":m.spouse_of?" · <b>配偶</b>":""}<br>
+  子女 <b>${ks.length}</b> 人 · 配偶 <b>${sp.length}</b> 人<br>
+  ${sp.length?`配偶姓名：<b>${sp.map(s=>esc(s.name||"未命名")).join("、")}</b><br>`:""}
+  生卒：<b>${esc(life)}</b><br>ID <code>${m.id}</code>`;
+}
+$("#panel").addEventListener("input",e=>{const f=e.target.dataset.f;if(!f||!S.sel)return;const m=S.idx.by[S.sel];
+  if(!e.target._snap){snapshot();e.target._snap=1}m[f]=e.target.value;
+  if(f==="death"&&e.target.value&&+m.alive){m.alive=0}
+  render();scheduleSave()});
+$("#panel").addEventListener("focusout",e=>{if(e.target._snap)e.target._snap=0});
+$("#panel").addEventListener("click",e=>{const b=e.target.closest("button,b");if(!b)return;const m=S.idx.by[S.sel];
+  if(b.dataset.k){mutate(()=>{m[b.dataset.k]=b.dataset.k==="alive"?+b.dataset.v:b.dataset.v});$("#panel").dataset.for="";renderPanel();return}
+  const x=b.dataset.x;if(!x)return;
+  if(x==="close")return closePanel();
+  if(x==="child")return addChild(m.spouse_of||m.id);
+  if(x==="sib"){if(m.spouse_of)return toast("配偶请到其本家添加同胞");const n=newMember({parent_id:m.parent_id,gender:"u",ord:m.ord+1});
+    return mutate(()=>{reorderAfter(m,n);S.members.push(n);S.sel=n.id}),focusName()}
+  if(x==="spouse"){const host=m.spouse_of?S.idx.by[m.spouse_of]:m;const n=newMember({spouse_of:host.id,gender:host.gender==="m"?"f":host.gender==="f"?"m":"u",ord:(S.idx.sp[host.id]||[]).length});
+    return mutate(()=>{S.members.push(n);S.sel=n.id}),focusName()}
+  if(x==="parent"){if(m.spouse_of)return toast("请在本家成员上添加父母");if(m.parent_id)return toast("已有父母，可直接点击上一代编辑");
+    const f=newMember({gender:"m",zibei:""}),mo=newMember({gender:"f",spouse_of:f.id});
+    return mutate(()=>{f.ord=m.ord;m.parent_id=f.id;S.members.push(f,mo);S.sel=f.id}),focusName()}
+  if(x==="left"||x==="right")return move(m,x==="left"?-1:1);
+  if(x==="batch"){const names=$("#batch").value.split(/[,，、\s]+/).map(s=>s.trim()).filter(Boolean);if(!names.length)return toast("请输入姓名，用逗号分隔");
+    const pid=m.spouse_of||m.id,base=(S.idx.kids[pid]||[]).length;
+    return mutate(()=>names.forEach((nm,i)=>S.members.push(newMember({name:nm,parent_id:pid,ord:base+i,zibei:""}))))}
+  if(x==="del")return delMember(m);
+});
+function focusName(){$("#panel").dataset.for="";renderPanel();setTimeout(()=>{const i=$('#panel [data-f="name"]');if(i){i.focus();i.select()}centerOn(S.sel)},30)}
+function addChild(pid){const p=S.idx.by[pid];const ks=S.idx.kids[pid]||[];
+  const n=newMember({parent_id:pid,ord:ks.length?Math.max(...ks.map(k=>k.ord))+1:0});
+  if(p&&p.name&&p.gender==="m")n.name=[...p.name][0];
+  mutate(()=>{S.members.push(n);S.sel=n.id});$("#panel").classList.add("show");focusName()}
+function reorderAfter(m,n){const sib=(S.idx.kids[m.parent_id]||S.idx.roots);sib.forEach((s,i)=>s.ord=i*2);n.ord=m.ord+1}
+function move(m,d){const list=m.spouse_of?S.idx.sp[m.spouse_of]:(m.parent_id?S.idx.kids[m.parent_id]:S.idx.roots);const i=list.indexOf(m),j=i+d;if(j<0||j>=list.length)return;
+  mutate(()=>{list.forEach((s,k)=>s.ord=k);list[i].ord=j;list[j].ord=i})}
+function delMember(m){
+  const idx=S.idx,rm=new Set();const walk=id=>{rm.add(id);(idx.sp[id]||[]).forEach(s=>rm.add(s.id));(idx.kids[id]||[]).forEach(c=>walk(c.id))};
+  if(m.spouse_of)rm.add(m.id);else walk(m.id);
+  const desc=rm.size-1;if(!confirm(desc?`将删除「${m.name||"未命名"}」及其配偶、后代共 ${rm.size} 人，确定？`:`确定删除「${m.name||"未命名"}」？`))return;
+  mutate(()=>{S.members=S.members.filter(x=>!rm.has(x.id));S.sel=null});closePanel()}
+
+/* ---------------- 工具栏 ---------------- */
+const A={
+  fit,zin:()=>{const r=$("#stage").getBoundingClientRect();zoomAt(1.2,r.width/2,r.height/2)},zout:()=>{const r=$("#stage").getBoundingClientRect();zoomAt(1/1.2,r.width/2,r.height/2)},
+  undo(){if(!S.undo.length)return toast("没有可撤销的操作");S.members=JSON.parse(S.undo.pop());render();scheduleSave();toast("已撤销")},
+  layout(){S.vertical=!S.vertical;localStorage.setItem("jp_layout",S.vertical?"v":"h");$("#layoutBtn").textContent="排版："+(S.vertical?"竖":"横");render();fit()},
+  first(){const n=newMember({gender:"m"});mutate(()=>{S.members.push(n);S.sel=n.id});$("#panel").classList.add("show");focusName();fit()},
+  sample(){if(S.members.length&&!confirm("载入示例会替换当前家谱（可撤销），继续？"))return;mutate(()=>S.members=sampleData());fit()},
+  async clear(){if(!S.members.length)return;if(!confirm("确定清空整个家谱？清空前会自动在服务器备份。"))return;
+    snapshot();S.members=[];closePanel();render();clearTimeout(saveTimer);await save("清空前自动备份");toast("已清空，可在「恢复」中找回")},
+  saveFile(){download(`${S.name}-${new Date().toISOString().slice(0,10)}.json`,JSON.stringify({app:"jiapu",name:S.name,members:S.members},null,1),"application/json")},
+  openFile(){$("#fileIn").click()},csvIn(){$("#csvFile").click()},
+  csvOut(){const idx=index(),by=idx.by,H=["ID","姓名","性别","在世","出生年","逝世年","字辈","籍贯","职业","生平简介","父/母ID","父/母姓名","配偶of_ID","配偶of姓名","代数","排序"];
+    const g={m:"男",f:"女",u:""},q=v=>{v=String(v??"");return /[",\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
+    const rows=S.members.map(m=>[m.id,m.name,g[m.gender],+m.alive?"在世":"已故",m.birth,m.death,m.zibei,m.origin,m.job,m.bio,m.parent_id,by[m.parent_id]?.name||"",m.spouse_of,by[m.spouse_of]?.name||"",idx.gen[m.id]||"",m.ord]);
+    download(`${S.name}.csv`,"\ufeff"+[H,...rows].map(r=>r.map(q).join(",")).join("\r\n"),"text/csv")},
+  png:exportPNG,print:doPrint,
+  async backup(){try{await api("POST",`/api/trees/${S.tid}/backups`,{note:prompt("备份备注（可空）","手动备份")||"手动备份"});toast("已备份到服务器")}catch(e){toast(e.message)}},
+  restore:showBackups,stats:showStats,trees:showTrees,
+  async login(){try{await api("GET","/api/login");location.reload()}catch(e){toast("登录失败")}}
+};
+document.addEventListener("click",e=>{const b=e.target.closest("[data-a]");if(b&&A[b.dataset.a])A[b.dataset.a]()});
+$("#treeSel").addEventListener("change",async e=>{clearTimeout(saveTimer);if($("#status").classList.contains("busy"))await save();openTree(+e.target.value)});
+document.addEventListener("keydown",e=>{if((e.ctrlKey||e.metaKey)&&e.key==="z"&&!/INPUT|TEXTAREA/.test(document.activeElement.tagName)){e.preventDefault();A.undo()}
+  if(e.key==="Escape"){document.querySelector(".mask")?.remove()}});
+window.addEventListener("beforeunload",e=>{if($("#status").classList.contains("busy")){e.preventDefault();e.returnValue=""}});
+/* 搜索 */
+$("#q").addEventListener("input",()=>{const q=$("#q").value.trim();S.hits=q?S.members.filter(m=>(m.name||"").includes(q)).map(m=>m.id):[];S.hitIdx=0;render();if(S.hits.length)centerOn(S.hits[0])});
+$("#q").addEventListener("keydown",e=>{if(e.key==="Enter"&&S.hits.length){S.hitIdx=(S.hitIdx+1)%S.hits.length;centerOn(S.hits[S.hitIdx]);toast(`${S.hitIdx+1}/${S.hits.length}`,900)}});
+
+/* 文件导入 */
+$("#fileIn").addEventListener("change",async e=>{const f=e.target.files[0];e.target.value="";if(!f)return;
+  try{const d=JSON.parse(await f.text());const ms=Array.isArray(d)?d:d.members;if(!Array.isArray(ms))throw 0;
+    if(!confirm(`文件含 ${ms.length} 人，将替换当前家谱（服务器会自动备份），继续？`))return;
+    snapshot();S.members=ms.map(m=>newMember(m));render();fit();clearTimeout(saveTimer);await save("打开文件前自动备份");await openTree(S.tid)}catch(err){toast("文件格式不正确")}});
+$("#csvFile").addEventListener("change",async e=>{const f=e.target.files[0];e.target.value="";if(!f)return;
+  try{const rows=parseCSV((await f.text()).replace(/^\ufeff/,""));const h=rows.shift().map(s=>s.trim());const col=n=>h.findIndex(x=>x===n||x.startsWith(n));
+    const c={id:col("ID"),name:col("姓名"),gender:col("性别"),alive:col("在世"),birth:col("出生"),death:col("逝世"),zibei:col("字辈"),origin:col("籍贯"),job:col("职业"),bio:col("生平"),parent_id:col("父/母ID"),pname:col("父/母姓名"),spouse_of:col("配偶of_ID"),sname:col("配偶of姓名"),ord:col("排序")};
+    if(c.name<0)throw new Error("缺少「姓名」列");
+    const ms=rows.filter(r=>r.some(x=>x.trim())).map((r,i)=>{const v=k=>c[k]>=0?(r[c[k]]||"").trim():"";
+      return newMember({id:v("id")||uid()+i,name:v("name"),gender:{"男":"m","女":"f"}[v("gender")]||"u",alive:/故|殁|0/.test(v("alive"))||v("death")?0:1,
+        birth:v("birth"),death:v("death"),zibei:v("zibei"),origin:v("origin"),job:v("job"),bio:v("bio"),parent_id:v("parent_id"),spouse_of:v("spouse_of"),ord:+v("ord")||i,_p:v("pname"),_s:v("sname")})});
+    const nameMap={};ms.forEach(m=>{if(!nameMap[m.name])nameMap[m.name]=m.id});
+    ms.forEach(m=>{if(!m.parent_id&&m._p)m.parent_id=nameMap[m._p]||"";if(!m.spouse_of&&m._s)m.spouse_of=nameMap[m._s]||"";delete m._p;delete m._s});
+    if(!confirm(`表格含 ${ms.length} 人，将替换当前家谱（服务器会自动备份），继续？`))return;
+    snapshot();S.members=ms;render();clearTimeout(saveTimer);await save("导入表格前自动备份");await openTree(S.tid)}catch(err){toast("导入失败："+(err.message||"格式错误"),3500)}});
+function parseCSV(t){const out=[];let row=[],cur="",q=false;for(let i=0;i<t.length;i++){const ch=t[i];
+  if(q){if(ch==='"'){if(t[i+1]==='"'){cur+='"';i++}else q=false}else cur+=ch}
+  else if(ch==='"')q=true;else if(ch===","){row.push(cur);cur=""}else if(ch==="\n"||ch==="\r"){if(ch==="\r"&&t[i+1]==="\n")i++;row.push(cur);out.push(row);row=[];cur=""}else cur+=ch}
+  if(cur||row.length){row.push(cur);out.push(row)}return out}
+function download(name,data,type){const a=document.createElement("a");a.href=data instanceof Blob?URL.createObjectURL(data):URL.createObjectURL(new Blob([data],{type}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
+
+/* 导出图片 / 打印 */
+function exportSVGString(){
+  const idx=index(),pos=layout(idx),b=S.bounds;if(!b)return null;const pad=40,title=56;
+  const w=Math.ceil(b.w+pad*2),h=Math.ceil(b.h+pad*2+title);
+  return {w,h,svg:`<svg xmlns="${NS}" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><rect width="100%" height="100%" fill="#f7f3ea"/>
+  <text x="${w/2}" y="${pad+14}" font-size="28" font-weight="700" fill="#8a6a2a" text-anchor="middle" font-family="STKaiti,KaiTi,serif">${esc(S.name)}</text>
+  <g transform="translate(${pad-b.x},${pad+title-b.y})">${buildSVG(idx,pos,true)}</g></svg>`};
+}
+function exportPNG(){const r=exportSVGString();if(!r)return toast("家谱为空");
+  let sc=2;while(r.w*sc>16000||r.h*sc>16000||r.w*r.h*sc*sc>2.5e8)sc/=1.5;
+  const img=new Image();img.onload=()=>{const c=document.createElement("canvas");c.width=r.w*sc;c.height=r.h*sc;const x=c.getContext("2d");x.scale(sc,sc);x.drawImage(img,0,0);
+    c.toBlob(b=>b?download(S.name+".png",b):download(S.name+".svg",r.svg,"image/svg+xml"),"image/png")};
+  img.onerror=()=>download(S.name+".svg",r.svg,"image/svg+xml");
+  img.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(r.svg)}
+function doPrint(){const r=exportSVGString();if(!r)return toast("家谱为空");const w=open("","_blank");if(!w)return toast("请允许弹出窗口");
+  w.document.write(`<!DOCTYPE html><title>${esc(S.name)}</title><style>@page{size:${r.w>r.h?"landscape":"portrait"};margin:8mm}html,body{margin:0}svg{width:100%;height:auto;max-height:100vh}</style>${r.svg}<script>onload=()=>{print()}<\/script>`);w.document.close()}
+
+/* 对话框 */
+function dialog(title,html){document.querySelector(".mask")?.remove();const m=document.createElement("div");m.className="mask";
+  m.innerHTML=`<div class="dlg"><h4>${title}<b>×</b></h4>${html}</div>`;m.addEventListener("click",e=>{if(e.target===m||e.target.matches("h4 b"))m.remove()});document.body.appendChild(m);return m}
+function showStats(){const idx=index(),ms=S.members,c=f=>ms.filter(f).length;
+  const gens={};ms.forEach(m=>{const g=idx.gen[m.id]||1;gens[g]=(gens[g]||0)+1});const mx=Math.max(1,...Object.values(gens));
+  const sur={};ms.filter(m=>!m.spouse_of&&m.name).forEach(m=>{const s=[...m.name][0];sur[s]=(sur[s]||0)+1});
+  const zb={};ms.filter(m=>m.zibei).forEach(m=>zb[m.zibei]=(zb[m.zibei]||0)+1);
+  const lifes=ms.filter(m=>!+m.alive&&+m.birth&&+m.death).map(m=>m.death-m.birth);
+  dialog("家谱统计",`<div class="kpi"><div><b>${ms.length}</b><small>总人数</small></div><div><b>${Object.keys(gens).length}</b><small>代数</small></div><div><b>${c(m=>!m.spouse_of)}</b><small>本家成员</small></div>
+  <div><b>${c(m=>m.gender==="m")}</b><small>男</small></div><div><b>${c(m=>m.gender==="f")}</b><small>女</small></div><div><b>${c(m=>m.spouse_of)}</b><small>配偶</small></div>
+  <div><b>${c(m=>+m.alive)}</b><small>在世</small></div><div><b>${c(m=>!+m.alive)}</b><small>已故</small></div><div><b>${lifes.length?Math.round(lifes.reduce((a,b)=>a+b,0)/lifes.length):"-"}</b><small>平均寿命</small></div></div>
+  <table><tr><th style="width:70px">世代</th><th>人数</th><th style="width:40px"></th></tr>${Object.keys(gens).sort((a,b)=>a-b).map(g=>`<tr><td>第 ${g} 代</td><td><div class="bar" style="width:${gens[g]/mx*100}%"></div></td><td>${gens[g]}</td></tr>`).join("")}</table>
+  ${Object.keys(sur).length?`<p style="color:var(--muted);font-size:13px">本家姓氏：${Object.entries(sur).sort((a,b)=>b[1]-a[1]).map(([k,v])=>esc(k)+" "+v).join("、")}</p>`:""}
+  ${Object.keys(zb).length?`<p style="color:var(--muted);font-size:13px">字辈：${Object.entries(zb).map(([k,v])=>esc(k)+" "+v).join("、")}</p>`:""}`)}
+async function showBackups(){let list;try{list=await api("GET",`/api/trees/${S.tid}/backups`)}catch(e){return toast(e.message)}
+  const m=dialog("服务器备份 · "+esc(S.name),`<p><button class="btn pri" data-b="new">立即备份</button></p>${list.length?`<table><tr><th>时间</th><th>备注</th><th>人数</th><th></th></tr>${list.map(b=>`<tr><td>${b.created_at}</td><td>${esc(b.note)}</td><td>${b.count}</td><td style="white-space:nowrap"><button class="btn" data-b="r" data-id="${b.id}">恢复</button> <a class="btn" href="/api/backups/${b.id}/download">下载</a> <button class="btn danger" data-b="d" data-id="${b.id}">删</button></td></tr>`).join("")}</table>`:"<p style='color:var(--muted)'>暂无备份</p>"}`);
+  m.addEventListener("click",async e=>{const b=e.target.closest("[data-b]");if(!b)return;try{
+    if(b.dataset.b==="new"){await A.backup();showBackups()}
+    if(b.dataset.b==="r"&&confirm("用此备份覆盖当前家谱？（当前内容会先自动备份）")){clearTimeout(saveTimer);await api("POST",`/api/backups/${b.dataset.id}/restore`);m.remove();await openTree(S.tid);toast("已恢复")}
+    if(b.dataset.b==="d"&&confirm("删除此备份？")){await api("DELETE",`/api/backups/${b.dataset.id}`);showBackups()}}catch(err){toast(err.message)}})}
+function showTrees(){const m=dialog("家谱管理",`<table>${S.trees.map(t=>`<tr><td>${esc(t.name)}</td><td>${t.count} 人</td><td style="white-space:nowrap;text-align:right">
+  <button class="btn" data-t="open" data-id="${t.id}">打开</button> <span class="edit-only"><button class="btn" data-t="ren" data-id="${t.id}">重命名</button> <button class="btn danger" data-t="del" data-id="${t.id}">删除</button></span></td></tr>`).join("")}</table>
+  <p class="edit-only"><button class="btn pri" data-t="new">＋ 新建家谱</button></p>`);
+  m.addEventListener("click",async e=>{const b=e.target.closest("[data-t]");if(!b)return;const id=+b.dataset.id;try{
+    if(b.dataset.t==="open"){m.remove();$("#treeSel").value=id;openTree(id)}
+    if(b.dataset.t==="new"){const n=prompt("新家谱名称","某氏家谱");if(!n)return;const r=await api("POST","/api/trees",{name:n});m.remove();await loadTrees(r.id)}
+    if(b.dataset.t==="ren"){const t=S.trees.find(t=>t.id===id),n=prompt("新名称",t.name);if(!n)return;await api("PATCH","/api/trees/"+id,{name:n});m.remove();await loadTrees(S.tid)}
+    if(b.dataset.t==="del"){const t=S.trees.find(t=>t.id===id);if(prompt(`删除「${t.name}」及其全部成员和备份，不可恢复。\n请输入家谱名称确认：`)!==t.name)return;await api("DELETE","/api/trees/"+id);m.remove();await loadTrees(id===S.tid?null:S.tid)}
+  }catch(err){toast(err.message,3000)}})}
+
+/* 示例数据（与参考图一致） */
+function sampleData(){let n=0;const L=[],P=(name,gender,o={})=>{const m=newMember(Object.assign({id:"s"+(++n),name,gender,ord:n},o));L.push(m);return m.id};
+  const a=P("李德山","m",{birth:"1918",death:"1995",alive:0,zibei:"德字辈",origin:"山东泰安"});P("秀英","f",{spouse_of:a,birth:"1921",death:"2003",alive:0});
+  const b=P("李文博","m",{parent_id:a,birth:"1943",zibei:"文字辈",origin:"山东泰安"});P("淑兰","f",{spouse_of:b,birth:"1945"});
+  const c=P("李文芳","f",{parent_id:a,birth:"1946",zibei:"文字辈",origin:"山东泰安"});P("建国","m",{spouse_of:c,birth:"1944"});
+  const d=P("李家俊","m",{parent_id:b,birth:"1968",zibei:"家字辈"});P("桂英","f",{spouse_of:d});
+  const e=P("李家慧","f",{parent_id:c,birth:"1970",zibei:"家字辈"});P("明磊","m",{spouse_of:e});
+  const f=P("李家伟","m",{parent_id:c,birth:"1972",zibei:"家字辈",job:"工程师"});P("丽娟","f",{spouse_of:f});
+  const g=P("李家栋","m",{parent_id:c,birth:"1975",zibei:"家字辈"});P("雪梅","f",{spouse_of:g});
+  const h=P("李泽楷","m",{parent_id:d,birth:"1990",death:"2021",alive:0,zibei:"泽字辈"});P("玉梅","f",{spouse_of:h});
+  const i=P("李泽霖","m",{parent_id:d,birth:"1993",zibei:"泽字辈"});P("晓燕","f",{spouse_of:i});
+  const j=P("李泽萱","f",{parent_id:e,birth:"1995",zibei:"泽字辈"});P("文轩","m",{spouse_of:j});
+  P("李泽宇","m",{parent_id:f,birth:"1998",zibei:"泽字辈"});P("李思翰","m",{parent_id:g,birth:"2001",zibei:"思字辈"});P("李思雨","f",{parent_id:g,birth:"2004",zibei:"思字辈"});
+  P("李思远","m",{parent_id:h,birth:"2015",zibei:"思字辈"});P("李思彤","m",{parent_id:i,birth:"2018",zibei:"思字辈"});P("李思悦","f",{parent_id:i,birth:"2020",zibei:"思字辈"});
+  P("李念安","f",{parent_id:j,birth:"2022",zibei:"念字辈"});return L}
+
+addEventListener("resize",()=>applyView());
+boot().catch(e=>{setStatus("连接失败","err");toast(e.message,5000)});
+</script>
+</body>
+</html>
